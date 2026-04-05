@@ -216,7 +216,7 @@ class AuthManager:
     # Public interface
     # ------------------------------------------------------------------
 
-    async def get_user_id(self, http: httpx.AsyncClient) -> str:
+    async def _get_user_id(self, http: httpx.AsyncClient) -> str:
         """Return the authenticated user's Tidepool user ID (JWT ``sub`` claim)."""
         raw_token = await self.get_valid_token(http)
         # Legacy format: "kc:<access_jwt>:<refresh_jwt>"
