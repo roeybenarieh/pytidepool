@@ -141,7 +141,7 @@ class AsyncTidepoolClient:
                 "AsyncTidepoolClient must be used as an async context manager: "
                 "`async with AsyncTidepoolClient(...) as client:`"
             )
-        return await self._auth.get_user_id(self._httpx_client)
+        return await self._auth._get_user_id(self._httpx_client)
 
     # ------------------------------------------------------------------
     # Synchronous convenience
