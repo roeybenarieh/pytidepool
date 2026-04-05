@@ -1,0 +1,34 @@
+[project]
+name = "pytidepool"
+version = "0.1.0"
+description = "Python client for the Tidepool diabetes data API"
+readme = "README.md"
+authors = [
+    { name = "Roey Ben Arieh", email = "roey280404@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "matplotlib>=3.10.8",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "respx>=0.22",
+    "mypy>=1.0",
+    "ruff>=0.9",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.2,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: tests that hit the real Tidepool DEV1 API (require TIDEPOOL_USERNAME / TIDEPOOL_PASSWORD)",
+]
