@@ -18,8 +18,7 @@ with TidepoolClient(
     username=USERNAME,
     password=PASSWORD,
 ) as client:
-    user_id = client.get_user_id()
-    profile = client.metadata.get_profile(user_id)
+    profile = client.metadata.get_profile()
     collections = client.metadata.get_collections()
 
 print("=== User Profile ===")

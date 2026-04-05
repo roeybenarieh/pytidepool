@@ -18,9 +18,8 @@ with TidepoolClient(
     username=USERNAME,
     password=PASSWORD,
 ) as client:
-    user_id = client.get_user_id()
-    cgm = client.summary.get_cgm(user_id)
-    bgm = client.summary.get_bgm(user_id)
+    cgm = client.summary.get_cgm()
+    bgm = client.summary.get_bgm()
 
 # CGM summary
 print("=== CGM Summary ===")

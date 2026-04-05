@@ -25,7 +25,6 @@ with TidepoolClient(
     password="your-password",
 ) as client:
     readings = client.data.get(
-        user_id="abc123",
         data_types=[DiabetesType.CBG],
     )
     for r in readings:
@@ -48,7 +47,6 @@ with TidepoolClient(
     password="your-password",
 ) as client:
     readings = client.data.get(
-        user_id="abc123",
         data_types=[DiabetesType.CBG],
         start_date=datetime.now(timezone.utc) - timedelta(days=14),
         end_date=datetime.now(timezone.utc),
@@ -67,7 +65,7 @@ with TidepoolClient(
     username="user@example.com",
     password="your-password",
 ) as client:
-    summary = client.summary.get_cgm("abc123")
+    summary = client.summary.get_cgm()
 
     # summary.periods is keyed by period name: "1d", "7d", "14d", "30d"
     period_14d = summary.periods and summary.periods.get("14d")
@@ -106,7 +104,7 @@ with TidepoolClient(
     username="user@example.com",
     password="your-password",
 ) as client:
-    profile = client.metadata.get_profile("abc123")
+    profile = client.metadata.get_profile()
     print(f"Name: {profile.full_name}")
     if profile.patient:
         print(f"Birthday: {profile.patient.birthday}")
@@ -167,7 +165,7 @@ with TidepoolClient(
     password="your-password",
 ) as client:
     try:
-        readings = client.data.get("abc123")
+        readings = client.data.get()
     except TidepoolAuthError:
         print("Authentication failed — check credentials.")
     except TidepoolNotFoundError:
@@ -205,7 +203,6 @@ async def main():
         password="your-password",
     ) as client:
         readings = await client.data.get(
-            user_id="abc123",
             data_types=[DiabetesType.CBG],
         )
         for r in readings:
