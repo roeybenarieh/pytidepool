@@ -72,6 +72,9 @@ class AsyncTidepoolClient:
         self._summary: SummaryResource | None = None
         self._metadata: MetadataResource | None = None
 
+        # Cached user ID — resolved lazily on first call to get_user_id()
+        self._cached_user_id: str | None = None
+
     # ------------------------------------------------------------------
     # Async context manager
     # ------------------------------------------------------------------
@@ -106,7 +109,7 @@ class AsyncTidepoolClient:
     def data(self) -> DataResource:
         """Access diabetes device data (CBG, SMBG, bolus, basal, …)."""
         if self._data is None:
-            self._data = DataResource(self._get_http())
+            self._data = DataResource(self._get_http(), self.get_user_id)
         return self._data
 
     @property
@@ -120,28 +123,31 @@ class AsyncTidepoolClient:
     def summary(self) -> SummaryResource:
         """Retrieve CGM/BGM time-in-range summary statistics."""
         if self._summary is None:
-            self._summary = SummaryResource(self._get_http())
+            self._summary = SummaryResource(self._get_http(), self.get_user_id)
         return self._summary
 
     @property
     def metadata(self) -> MetadataResource:
         """Read and update user metadata collections (profile, settings, …)."""
         if self._metadata is None:
-            self._metadata = MetadataResource(self._get_http())
+            self._metadata = MetadataResource(self._get_http(), self.get_user_id)
         return self._metadata
 
     async def get_user_id(self) -> str:
         """Return the authenticated user's Tidepool user ID.
 
         Extracted from the ``sub`` claim of the current access token — no
-        extra HTTP request is made beyond the initial login.
+        extra HTTP request is made beyond the initial login. Result is
+        cached so repeated calls are free.
         """
         if self._httpx_client is None:
             raise RuntimeError(
                 "AsyncTidepoolClient must be used as an async context manager: "
                 "`async with AsyncTidepoolClient(...) as client:`"
             )
-        return await self._auth._get_user_id(self._httpx_client)
+        if self._cached_user_id is None:
+            self._cached_user_id = await self._auth._get_user_id(self._httpx_client)
+        return self._cached_user_id
 
     # ------------------------------------------------------------------
     # Synchronous convenience

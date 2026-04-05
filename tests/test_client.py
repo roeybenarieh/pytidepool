@@ -108,9 +108,8 @@ class TestAuth:
             username="user@example.com",
             password="secret",
         ) as client:
-            await client.data.get(_USER_ID)
+            await client.data.get()
 
-        # Auth endpoint was called once
         assert respx.calls.call_count >= 1
 
     @respx.mock
@@ -125,7 +124,7 @@ class TestAuth:
                 username="bad@example.com",
                 password="wrong",
             ) as client:
-                await client.data.get(_USER_ID)
+                await client.data.get()
 
     @respx.mock
     async def test_get_user_id_extracts_sub(self) -> None:
@@ -162,10 +161,37 @@ class TestAuth:
             username="user@example.com",
             password="secret",
         ) as client:
-            await client.data.get(_USER_ID)
-            await client.data.get(_USER_ID)
+            await client.data.get()
+            await client.data.get()
 
         # Login called only once despite two data requests
+        assert login_route.call_count == 1
+
+    @respx.mock
+    async def test_user_id_is_cached(self) -> None:
+        """get_user_id() decodes the JWT only once; subsequent calls return the cached value."""
+        token = _make_legacy_token(sub=_USER_ID)
+        login_route = respx.post(f"{_BASE}/auth/login").mock(
+            return_value=httpx.Response(
+                200, headers={"x-tidepool-session-token": token}
+            )
+        )
+        respx.get(f"{_BASE}/data/{_USER_ID}").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+
+        async with AsyncTidepoolClient(
+            environment=Environment.PRODUCTION,
+            username="user@example.com",
+            password="secret",
+        ) as client:
+            # Multiple resource calls all resolve user_id automatically
+            await client.data.get()
+            await client.data.get()
+            uid = await client.get_user_id()
+
+        assert uid == _USER_ID
+        # Login (and thus token/JWT decode) happened only once
         assert login_route.call_count == 1
 
 
@@ -204,7 +230,7 @@ class TestDataResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            readings = await client.data.get(_USER_ID)
+            readings = await client.data.get()
 
         assert len(readings) == 1
         assert isinstance(readings[0], CbgReading)
@@ -227,7 +253,7 @@ class TestDataResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            readings = await client.data.get(_USER_ID)
+            readings = await client.data.get()
 
         assert readings == []
 
@@ -261,9 +287,8 @@ class TestDataResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            readings = await client.data.get(_USER_ID)
+            readings = await client.data.get()
 
-        # unknown type silently dropped, only cbg returned
         assert len(readings) == 1
         assert isinstance(readings[0], CbgReading)
 
@@ -286,7 +311,7 @@ class TestDataResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            await client.data.get(_USER_ID, data_types=[DiabetesType.CBG])
+            await client.data.get(data_types=[DiabetesType.CBG])
 
         assert "type=cbg" in str(data_route.calls.last.request.url)
 
@@ -314,7 +339,7 @@ class TestSummaryResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            summary = await client.summary.get_cgm(_USER_ID)
+            summary = await client.summary.get_cgm()
 
         assert isinstance(summary, CgmSummary)
 
@@ -336,7 +361,7 @@ class TestSummaryResource:
                 username="user@example.com",
                 password="secret",
             ) as client:
-                await client.summary.get_cgm(_USER_ID)
+                await client.summary.get_cgm()
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +389,7 @@ class TestMetadataResource:
             username="user@example.com",
             password="secret",
         ) as client:
-            profile = await client.metadata.get_profile(_USER_ID)
+            profile = await client.metadata.get_profile()
 
         assert isinstance(profile, UserProfile)
         assert profile.full_name == "Test User"

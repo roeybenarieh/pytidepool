@@ -1,4 +1,4 @@
-"""Integration tests against the Tidepool DEV1 API.
+"""Integration tests against the Tidepool API.
 
 These tests require real credentials — see conftest.py for setup instructions.
 Each test targets one resource area and verifies:
@@ -45,40 +45,34 @@ class TestSyncClient:
         with pytest.raises(TidepoolConfigurationError):
             TidepoolClient(environment=Environment.INTEGRATION)
 
-    def test_get_profile(self, sync_client: TidepoolClient, sync_user_id: str) -> None:
-        profile = sync_client.metadata.get_profile(sync_user_id)
+    def test_get_profile(self, sync_client: TidepoolClient) -> None:
+        profile = sync_client.metadata.get_profile()
         assert isinstance(profile, UserProfile)
 
     def test_get_collections(self, sync_client: TidepoolClient) -> None:
         collections = sync_client.metadata.get_collections()
         assert isinstance(collections, list)
 
-    def test_get_data(self, sync_client: TidepoolClient, sync_user_id: str) -> None:
-        readings = sync_client.data.get(sync_user_id)
+    def test_get_data(self, sync_client: TidepoolClient) -> None:
+        readings = sync_client.data.get()
         assert isinstance(readings, list)
 
-    def test_get_cbg(self, sync_client: TidepoolClient, sync_user_id: str) -> None:
-        readings = sync_client.data.get(sync_user_id, data_types=[DiabetesType.CBG])
+    def test_get_cbg(self, sync_client: TidepoolClient) -> None:
+        readings = sync_client.data.get(data_types=[DiabetesType.CBG])
         assert isinstance(readings, list)
         for r in readings:
             assert isinstance(r, CbgReading)
 
-    def test_get_cgm_summary(
-        self, sync_client: TidepoolClient, sync_user_id: str
-    ) -> None:
-        summary = sync_client.summary.get_cgm(sync_user_id)
+    def test_get_cgm_summary(self, sync_client: TidepoolClient) -> None:
+        summary = sync_client.summary.get_cgm()
         assert isinstance(summary, CgmSummary)
 
-    def test_get_bgm_summary(
-        self, sync_client: TidepoolClient, sync_user_id: str
-    ) -> None:
-        summary = sync_client.summary.get_bgm(sync_user_id)
+    def test_get_bgm_summary(self, sync_client: TidepoolClient) -> None:
+        summary = sync_client.summary.get_bgm()
         assert isinstance(summary, BgmSummary)
 
-    def test_list_datasets(
-        self, sync_client: TidepoolClient, sync_user_id: str
-    ) -> None:
-        datasets = sync_client.data.list_datasets(sync_user_id)
+    def test_list_datasets(self, sync_client: TidepoolClient) -> None:
+        datasets = sync_client.data.list_datasets()
         assert isinstance(datasets, list)
 
     def test_list_clinics(self, sync_client: TidepoolClient) -> None:
@@ -127,7 +121,7 @@ class TestAuth:
             except TidepoolAuthError:
                 pass  # expected
             except httpx.ConnectError:
-                pytest.skip("Cannot reach DEV1 API — no network connectivity")
+                pytest.skip("Cannot reach integration API — no network connectivity")
 
     def test_missing_credentials_raise_config_error(self) -> None:
         """Constructing a client without any credentials raises TidepoolConfigurationError."""
@@ -149,17 +143,17 @@ class TestMetadata:
         assert isinstance(collections, list)
 
     async def test_get_profile_returns_user_profile(
-        self, client: AsyncTidepoolClient, user_id: str
+        self, client: AsyncTidepoolClient
     ) -> None:
         """Fetching the profile collection parses into a UserProfile."""
-        profile = await client.metadata.get_profile(user_id)
+        profile = await client.metadata.get_profile()
         assert isinstance(profile, UserProfile)
 
     async def test_get_raw_profile_is_dict(
-        self, client: AsyncTidepoolClient, user_id: str
+        self, client: AsyncTidepoolClient
     ) -> None:
         """Raw metadata GET returns a plain dict."""
-        raw = await client.metadata.get(user_id, "profile")
+        raw = await client.metadata.get(collection="profile")
         assert isinstance(raw, dict)
 
 
@@ -169,29 +163,22 @@ class TestMetadata:
 
 
 class TestData:
-    async def test_get_returns_list(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_returns_list(self, client: AsyncTidepoolClient) -> None:
         """data.get() always returns a list, even if no data exists for the account."""
-        readings = await client.data.get(user_id)
+        readings = await client.data.get()
         assert isinstance(readings, list)
 
-    async def test_get_cbg_only(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_cbg_only(self, client: AsyncTidepoolClient) -> None:
         """Filtering by CBG type only returns CbgReading instances."""
-        readings = await client.data.get(user_id, data_types=[DiabetesType.CBG])
+        readings = await client.data.get(data_types=[DiabetesType.CBG])
         assert isinstance(readings, list)
         for r in readings:
             assert isinstance(r, CbgReading), f"Expected CbgReading, got {type(r)}"
 
-    async def test_get_latest_flag(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_latest_flag(self, client: AsyncTidepoolClient) -> None:
         """latest=True returns at most one record per data type."""
-        readings = await client.data.get(user_id, latest=True)
+        readings = await client.data.get(latest=True)
         assert isinstance(readings, list)
-        # With latest=True, duplicate types are not expected — verify at most one per type
         seen_types: set[str] = set()
         for r in readings:
             assert r.type not in seen_types, (
@@ -199,12 +186,10 @@ class TestData:
             )
             seen_types.add(r.type)
 
-    async def test_get_multiple_types(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_multiple_types(self, client: AsyncTidepoolClient) -> None:
         """Requesting multiple types returns only those types."""
         requested = [DiabetesType.CBG, DiabetesType.SMBG, DiabetesType.BOLUS]
-        readings = await client.data.get(user_id, data_types=requested)
+        readings = await client.data.get(data_types=requested)
         allowed_types = {dt.value for dt in requested}
         for r in readings:
             assert r.type in allowed_types, (
@@ -212,18 +197,16 @@ class TestData:
             )
 
     async def test_list_datasets_returns_list(
-        self, client: AsyncTidepoolClient, user_id: str
+        self, client: AsyncTidepoolClient
     ) -> None:
         """list_datasets() returns a list (may be empty for a fresh dev account)."""
-        datasets = await client.data.list_datasets(user_id)
+        datasets = await client.data.list_datasets()
         assert isinstance(datasets, list)
 
-    async def test_cbg_reading_fields(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_cbg_reading_fields(self, client: AsyncTidepoolClient) -> None:
         """Any returned CBG readings have valid value and time fields."""
         readings = await client.data.get(
-            user_id, data_types=[DiabetesType.CBG], latest=True
+            data_types=[DiabetesType.CBG], latest=True
         )
         for r in readings:
             assert isinstance(r, CbgReading)
@@ -237,25 +220,21 @@ class TestData:
 
 
 class TestSummary:
-    async def test_get_cgm_summary(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_cgm_summary(self, client: AsyncTidepoolClient) -> None:
         """get_cgm() returns a CgmSummary regardless of whether data exists."""
-        summary = await client.summary.get_cgm(user_id)
+        summary = await client.summary.get_cgm()
         assert isinstance(summary, CgmSummary)
 
-    async def test_get_bgm_summary(
-        self, client: AsyncTidepoolClient, user_id: str
-    ) -> None:
+    async def test_get_bgm_summary(self, client: AsyncTidepoolClient) -> None:
         """get_bgm() returns a BgmSummary."""
-        summary = await client.summary.get_bgm(user_id)
+        summary = await client.summary.get_bgm()
         assert isinstance(summary, BgmSummary)
 
     async def test_cgm_summary_periods_structure(
-        self, client: AsyncTidepoolClient, user_id: str
+        self, client: AsyncTidepoolClient
     ) -> None:
         """If the CGM summary has period data, time-in-range values are floats."""
-        summary = await client.summary.get_cgm(user_id)
+        summary = await client.summary.get_cgm()
         if not summary.periods:
             pytest.skip("No summary period data for this account")
         for period_name, period in summary.periods.items():

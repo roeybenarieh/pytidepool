@@ -20,9 +20,7 @@ with TidepoolClient(
     username=USERNAME,
     password=PASSWORD,
 ) as client:
-    user_id = client.get_user_id()
     readings = client.data.get(
-        user_id,
         data_types=[DiabetesType.CBG],
         start_date=datetime.now(timezone.utc) - timedelta(days=14),
         end_date=datetime.now(timezone.utc),

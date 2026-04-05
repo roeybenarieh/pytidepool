@@ -59,7 +59,7 @@ class DataResource(AsyncResource):
 
     async def get(
         self,
-        user_id: str,
+        user_id: str | None = None,
         *,
         data_types: list[DiabetesType] | None = None,
         start_date: datetime | None = None,
@@ -70,7 +70,7 @@ class DataResource(AsyncResource):
         """Fetch diabetes data for a user.
 
         Args:
-            user_id: Tidepool user ID.
+            user_id: Tidepool user ID. Defaults to the authenticated user.
             data_types: Filter by one or more diabetes data types.
             start_date: Return data on or after this datetime (UTC).
             end_date: Return data on or before this datetime (UTC).
@@ -80,6 +80,7 @@ class DataResource(AsyncResource):
         Returns:
             List of parsed diabetes readings.
         """
+        uid = await self._resolve_user_id(user_id)
         params: dict[str, Any] = {}
         if data_types:
             params["type"] = ",".join(t.value for t in data_types)
@@ -92,7 +93,7 @@ class DataResource(AsyncResource):
         if latest:
             params["latest"] = "true"
 
-        response = await self._http.get(f"/data/{user_id}", params=params)
+        response = await self._http.get(f"/data/{uid}", params=params)
         raw_list: list[dict[str, Any]] = response.json()
         results: list[DiabetesReading] = []
         for item in raw_list:
@@ -101,9 +102,10 @@ class DataResource(AsyncResource):
                 results.append(parsed)
         return results
 
-    async def list_datasets(self, user_id: str) -> list[Dataset]:
+    async def list_datasets(self, user_id: str | None = None) -> list[Dataset]:
         """List all datasets for a user."""
-        response = await self._http.get(f"/v1/users/{user_id}/datasets")
+        uid = await self._resolve_user_id(user_id)
+        response = await self._http.get(f"/v1/users/{uid}/datasets")
         body = response.json()
         # API returns {"data": [...]} or a plain list
         items: list[dict[str, Any]] = (
@@ -117,9 +119,9 @@ class DataResource(AsyncResource):
 
     async def upload(
         self,
-        user_id: str,
         readings: list[DiabetesReading],
         *,
+        user_id: str | None = None,
         dataset_id: str | None = None,
     ) -> UploadResponse:
         """Upload diabetes data for a user.
@@ -133,6 +135,7 @@ class DataResource(AsyncResource):
                 f"/v1/datasets/{dataset_id}/data", json=payload
             )
         else:
-            response = await self._http.post(f"/data/{user_id}", json=payload)
+            uid = await self._resolve_user_id(user_id)
+            response = await self._http.post(f"/data/{uid}", json=payload)
         body = response.json() if response.content else {}
         return UploadResponse(body if isinstance(body, dict) else {})

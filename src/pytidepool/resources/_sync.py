@@ -25,7 +25,7 @@ class SyncDataResource:
 
     def get(
         self,
-        user_id: str,
+        user_id: str | None = None,
         *,
         data_types: list[DiabetesType] | None = None,
         start_date: datetime | None = None,
@@ -44,7 +44,7 @@ class SyncDataResource:
             )
         )
 
-    def list_datasets(self, user_id: str) -> list[Dataset]:
+    def list_datasets(self, user_id: str | None = None) -> list[Dataset]:
         return self._run(self._resource.list_datasets(user_id))  # type: ignore[return-value]
 
     def delete_dataset(self, dataset_id: str) -> None:
@@ -52,13 +52,13 @@ class SyncDataResource:
 
     def upload(
         self,
-        user_id: str,
         readings: list[DiabetesReading],
         *,
+        user_id: str | None = None,
         dataset_id: str | None = None,
     ) -> UploadResponse:
         return self._run(  # type: ignore[return-value]
-            self._resource.upload(user_id, readings, dataset_id=dataset_id)
+            self._resource.upload(readings, user_id=user_id, dataset_id=dataset_id)
         )
 
 
@@ -111,14 +111,14 @@ class SyncSummaryResource:
         self._resource = resource
         self._run = run_fn
 
-    def get_cgm(self, user_id: str) -> CgmSummary:
+    def get_cgm(self, user_id: str | None = None) -> CgmSummary:
         return self._run(self._resource.get_cgm(user_id))  # type: ignore[return-value]
 
-    def get_bgm(self, user_id: str) -> BgmSummary:
+    def get_bgm(self, user_id: str | None = None) -> BgmSummary:
         return self._run(self._resource.get_bgm(user_id))  # type: ignore[return-value]
 
-    def get(self, user_id: str, summary_type: SummaryType) -> CgmSummary | BgmSummary:
-        return self._run(self._resource.get(user_id, summary_type))  # type: ignore[return-value]
+    def get(self, summary_type: SummaryType, user_id: str | None = None) -> CgmSummary | BgmSummary:
+        return self._run(self._resource.get(summary_type, user_id))  # type: ignore[return-value]
 
 
 class SyncMetadataResource:
@@ -128,14 +128,14 @@ class SyncMetadataResource:
         self._resource = resource
         self._run = run_fn
 
-    def get(self, user_id: str, collection: str) -> dict[str, Any]:
+    def get(self, user_id: str | None = None, collection: str = "profile") -> dict[str, Any]:
         return self._run(self._resource.get(user_id, collection))  # type: ignore[return-value]
 
-    def get_profile(self, user_id: str) -> UserProfile:
+    def get_profile(self, user_id: str | None = None) -> UserProfile:
         return self._run(self._resource.get_profile(user_id))  # type: ignore[return-value]
 
-    def update(self, user_id: str, collection: str, data: dict[str, Any]) -> None:
-        self._run(self._resource.update(user_id, collection, data))
+    def update(self, collection: str, data: dict[str, Any], *, user_id: str | None = None) -> None:
+        self._run(self._resource.update(collection, data, user_id=user_id))
 
     def get_collections(self) -> list[str]:
         return self._run(self._resource.get_collections())  # type: ignore[return-value]
