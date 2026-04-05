@@ -3,7 +3,6 @@
 Usage:
     export TIDEPOOL_USERNAME=your@email.com
     export TIDEPOOL_PASSWORD=yourpassword
-    export TIDEPOOL_USER_ID=your-user-id
     python examples/fetch_cgm_readings.py
 """
 
@@ -15,15 +14,15 @@ from pytidepool.models.data import CbgReading
 
 USERNAME = os.environ["TIDEPOOL_USERNAME"]
 PASSWORD = os.environ["TIDEPOOL_PASSWORD"]
-USER_ID = os.environ["TIDEPOOL_USER_ID"]
 
 with TidepoolClient(
     environment=Environment.PRODUCTION,
     username=USERNAME,
     password=PASSWORD,
 ) as client:
+    user_id = client.get_user_id()
     readings = client.data.get(
-        USER_ID,
+        user_id,
         data_types=[DiabetesType.CBG],
         start_date=datetime.now(timezone.utc) - timedelta(days=14),
         end_date=datetime.now(timezone.utc),

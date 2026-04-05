@@ -7,7 +7,6 @@ Requires matplotlib:
 Usage:
     export TIDEPOOL_USERNAME=your@email.com
     export TIDEPOOL_PASSWORD=yourpassword
-    export TIDEPOOL_USER_ID=your-user-id
     python examples/visualize_cgm.py
 
 Optional env vars:
@@ -18,15 +17,9 @@ Optional env vars:
 import os
 from datetime import datetime, timedelta, timezone
 
-try:
-    import matplotlib.dates as mdates
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as mpatches
-except ImportError:
-    raise SystemExit(
-        "matplotlib is required for this example.\n"
-        "Install it with:  pip install matplotlib"
-    )
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 from pytidepool import TidepoolClient, Environment, DiabetesType
 from pytidepool.models.data import CbgReading
@@ -37,7 +30,6 @@ from pytidepool.models.data import CbgReading
 
 USERNAME = os.environ["TIDEPOOL_USERNAME"]
 PASSWORD = os.environ["TIDEPOOL_PASSWORD"]
-USER_ID = os.environ["TIDEPOOL_USER_ID"]
 DAYS = int(os.environ.get("TIDEPOOL_DAYS", "14"))
 UNITS = os.environ.get("TIDEPOOL_UNITS", "mgdl").lower()
 
@@ -56,8 +48,9 @@ with TidepoolClient(
     username=USERNAME,
     password=PASSWORD,
 ) as client:
+    user_id = client.get_user_id()
     raw = client.data.get(
-        USER_ID,
+        user_id,
         data_types=[DiabetesType.CBG],
         start_date=datetime.now(timezone.utc) - timedelta(days=DAYS),
         end_date=datetime.now(timezone.utc),

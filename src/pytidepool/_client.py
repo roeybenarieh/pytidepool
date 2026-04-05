@@ -130,6 +130,19 @@ class AsyncTidepoolClient:
             self._metadata = MetadataResource(self._get_http())
         return self._metadata
 
+    async def get_user_id(self) -> str:
+        """Return the authenticated user's Tidepool user ID.
+
+        Extracted from the ``sub`` claim of the current access token — no
+        extra HTTP request is made beyond the initial login.
+        """
+        if self._httpx_client is None:
+            raise RuntimeError(
+                "AsyncTidepoolClient must be used as an async context manager: "
+                "`async with AsyncTidepoolClient(...) as client:`"
+            )
+        return await self._auth.get_user_id(self._httpx_client)
+
     # ------------------------------------------------------------------
     # Synchronous convenience
     # ------------------------------------------------------------------

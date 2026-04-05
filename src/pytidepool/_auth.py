@@ -216,6 +216,21 @@ class AuthManager:
     # Public interface
     # ------------------------------------------------------------------
 
+    async def get_user_id(self, http: httpx.AsyncClient) -> str:
+        """Return the authenticated user's Tidepool user ID (JWT ``sub`` claim)."""
+        raw_token = await self.get_valid_token(http)
+        # Legacy format: "kc:<access_jwt>:<refresh_jwt>"
+        if raw_token.startswith("kc:"):
+            without_prefix = raw_token[3:]
+            colon_idx = without_prefix.find(":", without_prefix.find("."))
+            access_jwt = without_prefix[:colon_idx] if colon_idx != -1 else without_prefix
+        else:
+            access_jwt = raw_token
+        payload_b64 = access_jwt.split(".")[1]
+        payload_b64 += "=" * (4 - len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+        return str(payload["sub"])
+
     async def get_valid_token(self, http: httpx.AsyncClient) -> str:
         """Return a valid access token, refreshing or re-authenticating as needed.
 

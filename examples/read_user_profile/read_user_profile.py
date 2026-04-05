@@ -3,7 +3,6 @@
 Usage:
     export TIDEPOOL_USERNAME=your@email.com
     export TIDEPOOL_PASSWORD=yourpassword
-    export TIDEPOOL_USER_ID=your-user-id
     python examples/read_user_profile.py
 """
 
@@ -13,14 +12,14 @@ from pytidepool import TidepoolClient, Environment
 
 USERNAME = os.environ["TIDEPOOL_USERNAME"]
 PASSWORD = os.environ["TIDEPOOL_PASSWORD"]
-USER_ID = os.environ["TIDEPOOL_USER_ID"]
 
 with TidepoolClient(
     environment=Environment.PRODUCTION,
     username=USERNAME,
     password=PASSWORD,
 ) as client:
-    profile = client.metadata.get_profile(USER_ID)
+    user_id = client.get_user_id()
+    profile = client.metadata.get_profile(user_id)
     collections = client.metadata.get_collections()
 
 print("=== User Profile ===")
