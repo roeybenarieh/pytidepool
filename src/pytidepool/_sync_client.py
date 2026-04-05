@@ -189,6 +189,14 @@ class TidepoolClient:
     # Resource sub-clients
     # ------------------------------------------------------------------
 
+    def get_user_id(self) -> str:
+        """Return the authenticated user's Tidepool user ID.
+
+        Extracted from the ``sub`` claim of the current access token — no
+        extra HTTP request is made beyond the initial login.
+        """
+        return self._run(self._require_entered().get_user_id())
+
     @property
     def data(self) -> SyncDataResource:
         """Access diabetes device data (CBG, SMBG, bolus, basal, …)."""
